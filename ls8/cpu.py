@@ -5,28 +5,26 @@ import sys
 class CPU:
     """Main CPU class."""
 
-    def __init__(self):
+    def __init__(self, program_file):
         """Construct a new CPU."""
         self.ram = [0] * 256
         self.registers = [0] * 8
         self.pc = 0
+        self.program_file = program_file
 
     def load(self):
         """Load a program into memory."""
 
         address = 0
+        program = []
+        f = open(sys.argv[1])
+        line = f.readline()
+        while line != '':
+            if line[0] in ['0', '1']:
+                program.append(int(line[:8], 2))
+            line = f.readline() 
+        f.close()
 
-        # For now, we've just hardcoded a program:
-
-        program = [
-            # From print8.ls8
-            0b10000010, # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111, # PRN R0
-            0b00000000,
-            0b00000001, # HLT
-        ]
 
         for instruction in program:
             self.ram[address] = instruction
@@ -37,8 +35,9 @@ class CPU:
         """ALU operations."""
 
         if op == "ADD":
-            self.reg[reg_a] += self.reg[reg_b]
-        #elif op == "SUB": etc
+            self.registers[reg_a] += self.registers[reg_b]
+        elif op == "MUL":
+            self.registers[reg_a] *= self.registers[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -67,6 +66,7 @@ class CPU:
         HLT = 0b00000001
         PRN = 0b01000111
         LDI = 0b10000010
+        MUL = 0b10100010
         IC = self.ram_read(self.pc)
         operand_a = self.ram_read(self.pc+1)
         operand_b = self.ram_read(self.pc+2)
@@ -77,8 +77,12 @@ class CPU:
             elif IC == PRN:
                 print(self.registers[operand_a])
                 self.pc += 2
+            elif IC == MUL:
+                self.alu('MUL', operand_a, operand_b)
+                self.pc += 3
             IC = self.ram[self.pc]
-
+            operand_a = self.ram_read(self.pc+1)
+            operand_b = self.ram_read(self.pc+2)
 
     def ram_read(self, MAR):
         return self.ram[MAR]
