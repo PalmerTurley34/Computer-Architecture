@@ -5,19 +5,23 @@ import sys
 class CPU:
     """Main CPU class."""
 
-    def __init__(self, program_file):
+    def __init__(self):
         """Construct a new CPU."""
         self.ram = [0] * 256
         self.registers = [0] * 8
         self.pc = 0
-        self.program_file = program_file
+        self.branchtable = {}
+        self.branchtable[0b01000111] = self.PRN_handle
+        self.branchtable[0b10000010] = self.LDI_handle
+        self.branchtable[0b10100010] = self.MUL_handle
 
-    def load(self):
+
+    def load(self, program_file):
         """Load a program into memory."""
 
         address = 0
         program = []
-        f = open(sys.argv[1])
+        f = open(program_file)
         line = f.readline()
         while line != '':
             if line[0] in ['0', '1']:
@@ -64,22 +68,11 @@ class CPU:
     def run(self):
         """Run the CPU."""
         HLT = 0b00000001
-        PRN = 0b01000111
-        LDI = 0b10000010
-        MUL = 0b10100010
         IC = self.ram_read(self.pc)
         operand_a = self.ram_read(self.pc+1)
         operand_b = self.ram_read(self.pc+2)
         while IC != HLT:
-            if IC == LDI:
-                self.registers[operand_a] = operand_b
-                self.pc += 3
-            elif IC == PRN:
-                print(self.registers[operand_a])
-                self.pc += 2
-            elif IC == MUL:
-                self.alu('MUL', operand_a, operand_b)
-                self.pc += 3
+            self.branchtable[IC](operand_a, operand_b)
             IC = self.ram[self.pc]
             operand_a = self.ram_read(self.pc+1)
             operand_b = self.ram_read(self.pc+2)
@@ -89,3 +82,16 @@ class CPU:
     
     def ram_write(self, MAR, MDR):
         self.ram[MAR] = MDR
+
+
+    def LDI_handle(self, a, b):
+        self.registers[a] = b
+        self.pc += 3
+
+    def MUL_handle(self, a, b):
+        self.alu('MUL', a, b)
+        self.pc += 3
+
+    def PRN_handle(self, a, b):
+        print(self.registers[a])
+        self.pc += 2
