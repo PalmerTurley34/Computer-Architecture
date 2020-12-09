@@ -14,6 +14,10 @@ class CPU:
         self.branchtable[0b01000111] = self.PRN_handle
         self.branchtable[0b10000010] = self.LDI_handle
         self.branchtable[0b10100010] = self.MUL_handle
+        self.branchtable[0b01000101] = self.PUSH_handle
+        self.branchtable[0b01000110] = self.POP_handle
+        self.sp = 7
+        self.registers[self.sp] = 0xf4
 
 
     def load(self, program_file):
@@ -94,4 +98,14 @@ class CPU:
 
     def PRN_handle(self, a, b):
         print(self.registers[a])
+        self.pc += 2
+
+    def PUSH_handle(self, a, b):
+        self.registers[self.sp] -= 1
+        self.ram[self.registers[self.sp]] = self.registers[a]
+        self.pc += 2
+
+    def POP_handle(self, a, b):
+        self.registers[a] = self.ram[self.registers[self.sp]]
+        self.registers[self.sp] += 1
         self.pc += 2
