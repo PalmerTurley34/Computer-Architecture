@@ -4,6 +4,15 @@ import sys
 
 class CPU:
     """Main CPU class."""
+    PRN = 0b01000111
+    LDI = 0b10000010
+    MUL = 0b10100010
+    PUSH = 0b01000101
+    POP = 0b01000110
+    CALL = 0b01010000
+    RET = 0b00010001
+    ADD = 0b10100000
+    sp = 7
 
     def __init__(self):
         """Construct a new CPU."""
@@ -11,12 +20,14 @@ class CPU:
         self.registers = [0] * 8
         self.pc = 0
         self.branchtable = {}
-        self.branchtable[0b01000111] = self.PRN_handle
-        self.branchtable[0b10000010] = self.LDI_handle
-        self.branchtable[0b10100010] = self.MUL_handle
-        self.branchtable[0b01000101] = self.PUSH_handle
-        self.branchtable[0b01000110] = self.POP_handle
-        self.sp = 7
+        self.branchtable[self.PRN] = self.PRN_handle
+        self.branchtable[self.LDI] = self.LDI_handle
+        self.branchtable[self.MUL] = self.MUL_handle
+        self.branchtable[self.PUSH] = self.PUSH_handle
+        self.branchtable[self.POP] = self.POP_handle
+        self.branchtable[self.CALL] = self.CALL_handle
+        self.branchtable[self.RET] = self.RET_handle
+        self.branchtable[self.ADD] = self.ADD_handle
         self.registers[self.sp] = 0xf4
 
 
@@ -65,7 +76,7 @@ class CPU:
         ), end='')
 
         for i in range(8):
-            print(" %02X" % self.reg[i], end='')
+            print(" %02X" % self.registers[i], end='')
 
         print()
 
@@ -96,6 +107,10 @@ class CPU:
         self.alu('MUL', a, b)
         self.pc += 3
 
+    def ADD_handle(self, a, b):
+        self.alu('ADD', a, b)
+        self.pc += 3
+
     def PRN_handle(self, a, b):
         print(self.registers[a])
         self.pc += 2
@@ -109,3 +124,12 @@ class CPU:
         self.registers[a] = self.ram[self.registers[self.sp]]
         self.registers[self.sp] += 1
         self.pc += 2
+
+    def CALL_handle(self, a, b):
+        self.registers[self.sp] -= 1
+        self.ram[self.registers[self.sp]] = self.pc + 2
+        self.pc = self.registers[a] 
+
+    def RET_handle(self, a, b):
+        self.pc = self.ram[self.registers[self.sp]]
+        self.registers[self.sp] += 1
